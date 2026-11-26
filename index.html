@@ -1,0 +1,856 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>BMS Desktop Monitor</title>
+<style>
+:root{
+  --bg:#f3f5f7;--panel:#ffffff;--panel2:#eef1f4;--text:#15202b;--muted:#5b6b7a;--border:#dce2e8;
+  --accent:#0d8f6f;--accent2:#2f6fde;--warn:#c27a05;--bad:#cf3a3a;--good:#12895a;--shadow:0 1px 2px rgba(0,0,0,.06);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0d1318;--panel:#151d24;--panel2:#1c262f;--text:#e6edf3;--muted:#8d9cab;--border:#26323d;
+    --accent:#2fcf9f;--accent2:#5c9bff;--warn:#f0a93b;--bad:#ff6b6b;--good:#38d39f;--shadow:none;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0d1318;--panel:#151d24;--panel2:#1c262f;--text:#e6edf3;--muted:#8d9cab;--border:#26323d;
+  --accent:#2fcf9f;--accent2:#5c9bff;--warn:#f0a93b;--bad:#ff6b6b;--good:#38d39f;--shadow:none;
+}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%}
+body{background:var(--bg);color:var(--text);font:14px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;font-variant-numeric:tabular-nums}
+button,input,select{font:inherit;color:inherit}
+button{cursor:pointer;border:1px solid var(--border);background:var(--panel2);border-radius:8px;padding:7px 14px}
+button:hover:not(:disabled){border-color:var(--accent)}
+button:disabled{opacity:.45;cursor:not-allowed}
+button.primary{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:600}
+[data-theme="dark"] button.primary,:root:not([data-theme="light"]) button.primary{color:#04140f}
+button.danger{color:var(--bad)}
+input,select{background:var(--panel2);border:1px solid var(--border);border-radius:6px;padding:6px 8px}
+input:focus,select:focus,button:focus-visible{outline:2px solid var(--accent2);outline-offset:1px}
+
+header.top{display:flex;align-items:center;gap:12px;padding:10px 16px;background:var(--panel);border-bottom:1px solid var(--border);position:sticky;top:0;z-index:5;flex-wrap:wrap}
+.brand{font-weight:700;font-size:16px;display:flex;align-items:center;gap:8px}
+.brand svg{color:var(--accent)}
+.devname{color:var(--muted);min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.dot{width:9px;height:9px;border-radius:50%;background:var(--muted);display:inline-block;margin-right:6px}
+.dot.on{background:var(--good)}.dot.demo{background:var(--accent2)}.dot.busy{background:var(--warn)}
+.spacer{flex:1}
+.hdr-actions{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+label.chk{display:flex;gap:6px;align-items:center;color:var(--muted);font-size:13px;cursor:pointer}
+
+.layout{display:flex;min-height:calc(100% - 58px)}
+nav.side{width:190px;flex:none;background:var(--panel);border-right:1px solid var(--border);padding:12px 8px;display:flex;flex-direction:column;gap:2px;position:sticky;top:var(--hdr,58px);align-self:flex-start;height:calc(100vh - var(--hdr,58px))}
+nav.side button{border:0;background:transparent;text-align:left;padding:9px 12px;border-radius:8px;display:flex;gap:10px;align-items:center;color:var(--muted)}
+nav.side button.active{background:var(--panel2);color:var(--text);font-weight:600}
+nav.side button .badge{margin-left:auto;background:var(--bad);color:#fff;border-radius:10px;font-size:11px;padding:0 7px;display:none}
+main{flex:1;padding:18px;min-width:0}
+section.tab{display:none;max-width:1280px;margin:0 auto}
+section.tab.active{display:block}
+h2{font-size:18px;margin:0 0 14px}
+h3{font-size:13px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin:0 0 10px;font-weight:600}
+.card{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:16px;box-shadow:var(--shadow)}
+.grid{display:grid;gap:14px}
+.muted{color:var(--muted)}
+
+/* status */
+.hero{display:grid;grid-template-columns:260px 1fr;gap:14px;margin-bottom:14px}
+.socbox{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px}
+.ring{position:relative;width:170px;height:170px}
+.ring svg{transform:rotate(-90deg)}
+.ring .val{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center}
+.ring .val b{font-size:38px;line-height:1}
+.ring .val span{color:var(--muted);font-size:12px;margin-top:4px}
+.chips{display:flex;gap:6px;flex-wrap:wrap;justify-content:center}
+.chip{font-size:12px;padding:3px 10px;border-radius:20px;border:1px solid var(--border);background:var(--panel2);color:var(--muted)}
+.chip.on{color:var(--good);border-color:var(--good)}
+.chip.off{color:var(--bad);border-color:var(--bad)}
+.chip.info{color:var(--accent2);border-color:var(--accent2)}
+.kpis{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}
+.kpi{background:var(--panel2);border-radius:10px;padding:10px 12px}
+.kpi .k{font-size:12px;color:var(--muted)}
+.kpi .v{font-size:20px;font-weight:650;margin-top:2px;white-space:nowrap}
+.kpi .v small{font-size:12px;font-weight:500;color:var(--muted);margin-left:3px}
+.kpi.big .v{font-size:26px}
+.pos{color:var(--good)}.neg{color:var(--warn)}
+
+.cells{display:grid;grid-template-columns:repeat(auto-fill,minmax(118px,1fr));gap:8px}
+.cell{border:1px solid var(--border);border-radius:10px;padding:8px 10px;background:var(--panel2);position:relative;overflow:hidden}
+.cell .n{font-size:11px;color:var(--muted);display:flex;justify-content:space-between}
+.cell .cv{font-size:18px;font-weight:650}
+.cell .cr{font-size:11px;color:var(--muted)}
+.cell .bar{height:4px;border-radius:2px;background:var(--border);margin-top:6px;overflow:hidden}
+.cell .bar i{display:block;height:100%;background:var(--accent)}
+.cell.max{border-color:var(--bad)}.cell.max .cv{color:var(--bad)}
+.cell.min{border-color:var(--accent2)}.cell.min .cv{color:var(--accent2)}
+.cellsum{display:flex;gap:18px;flex-wrap:wrap;margin-bottom:10px;font-size:13px}
+.cellsum b{font-weight:650}
+.charts{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:14px}
+canvas.chart{width:100%;height:180px;display:block}
+
+/* settings */
+table{width:100%;border-collapse:collapse}
+th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--border);vertical-align:middle}
+th{font-size:12px;color:var(--muted);font-weight:600}
+td.num{font-weight:600;white-space:nowrap}
+td input{width:120px}
+.setgroups{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.toolbar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:14px}
+
+/* control */
+.switches{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:14px}
+.sw{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.sw .t{font-weight:650;font-size:16px}
+.toggle{width:58px;height:32px;border-radius:16px;border:0;background:var(--border);position:relative;padding:0;flex:none}
+.toggle::after{content:"";position:absolute;top:4px;left:4px;width:24px;height:24px;border-radius:50%;background:#fff;transition:left .15s}
+.toggle.on{background:var(--accent)}
+.toggle.on::after{left:30px}
+
+/* alarms/log */
+.alarms{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:6px}
+.alarm{display:flex;gap:8px;align-items:center;padding:7px 10px;border-radius:8px;background:var(--panel2);font-size:13px;color:var(--muted)}
+.alarm.act{background:color-mix(in srgb,var(--bad) 15%,var(--panel2));color:var(--bad);font-weight:600}
+.alarm i{width:8px;height:8px;border-radius:50%;background:var(--border);flex:none}
+.alarm.act i{background:var(--bad)}
+.log{font:12px/1.5 ui-monospace,Consolas,monospace;max-height:420px;overflow:auto;background:var(--panel2);border-radius:8px;padding:8px 10px}
+.log div{white-space:pre-wrap;word-break:break-all}
+.log .w{color:var(--warn)}.log .e{color:var(--bad)}.log .s{color:var(--good)}
+textarea.hex{width:100%;height:150px;font:12px ui-monospace,Consolas,monospace;background:var(--panel2);color:var(--text);border:1px solid var(--border);border-radius:8px;padding:8px}
+
+.empty{padding:40px 20px;text-align:center;color:var(--muted)}
+.empty b{display:block;color:var(--text);font-size:16px;margin-bottom:6px}
+#savedList{max-width:560px;margin:0 auto 22px;text-align:left}
+#savedList:empty{display:none}
+#savedList b{display:inline;font-size:inherit;margin:0}
+.saved{display:flex;align-items:center;gap:8px;padding:10px 12px;border:1px solid var(--border);border-radius:10px;background:var(--panel2);margin-bottom:8px;flex-wrap:wrap}
+.saved .muted{font-size:12px}
+.cd{display:flex;gap:8px;align-items:center;flex-wrap:wrap;padding:10px 12px;border:1px solid var(--accent2);border-radius:10px;margin-bottom:10px;color:var(--text)}
+#savedSel{max-width:200px}
+dialog{border:1px solid var(--border);border-radius:12px;background:var(--panel);color:var(--text);padding:20px;max-width:420px;width:calc(100% - 32px)}
+dialog::backdrop{background:rgba(0,0,0,.45)}
+dialog .acts{display:flex;justify-content:flex-end;gap:8px;margin-top:16px}
+#toast{position:fixed;bottom:18px;left:50%;transform:translateX(-50%);background:var(--text);color:var(--bg);padding:10px 16px;border-radius:8px;opacity:0;transition:opacity .2s;pointer-events:none;max-width:calc(100% - 32px);z-index:20}
+#toast.show{opacity:1}
+
+@media (max-width:1280px){.setgroups{grid-template-columns:1fr}}
+@media (max-width:980px){.hero{grid-template-columns:1fr}.charts{grid-template-columns:1fr}}
+@media (max-width:760px){
+  .layout{flex-direction:column}
+  nav.side{width:auto;height:auto;align-self:stretch;z-index:4;flex-direction:row;overflow-x:auto;border-right:0;border-bottom:1px solid var(--border);padding:6px 16px}
+  nav.side button{white-space:nowrap}
+  main{padding:14px 16px}
+  td input{width:90px}
+}
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="brand">
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="7" width="16" height="10" rx="2"/><path d="M21 10v4"/><path d="M10 9l-2 3h4l-2 3"/></svg>
+    BMS Desktop Monitor
+  </div>
+  <span class="devname"><span class="dot" id="dot"></span><span id="connText">Not connected</span></span>
+  <span class="spacer"></span>
+  <div class="hdr-actions">
+    <label class="chk" title="Show every Bluetooth device, not only ones named JK… (use if your BMS was renamed)"><input type="checkbox" id="allDev"> All devices</label>
+    <select id="savedSel" hidden title="Switch to a saved BMS"></select>
+    <button class="primary" id="btnConnect">Pair new BMS</button>
+    <button id="btnDemo">Demo</button>
+    <button id="btnDisconnect" disabled>Disconnect</button>
+    <button id="btnTheme" title="Toggle light / dark">◐</button>
+  </div>
+</header>
+
+<div class="layout">
+  <nav class="side" id="nav">
+    <button data-tab="status" class="active">▣ Status</button>
+    <button data-tab="settings">⚙ Settings</button>
+    <button data-tab="control">⏻ Control</button>
+    <button data-tab="device">ⓘ Device info</button>
+    <button data-tab="alarms">⚠ Alarms &amp; log <span class="badge" id="alarmBadge">0</span></button>
+  </nav>
+
+  <main>
+    <!-- STATUS -->
+    <section class="tab active" id="tab-status">
+      <div id="statusEmpty" class="card empty">
+        <div id="savedList"></div>
+        <b>No BMS connected</b>
+        Turn on Bluetooth, click <b style="display:inline;font-size:inherit">Pair new BMS</b> and pick your JK BMS from the list.<br>
+        It is remembered, and next time the app connects to it automatically.<br>
+        Or click <b style="display:inline;font-size:inherit">Demo</b> to try the app with simulated data.
+        <div id="btWarn" class="muted" style="margin-top:12px"></div>
+      </div>
+      <div id="statusBody" hidden>
+        <div class="hero">
+          <div class="card socbox">
+            <div class="ring">
+              <svg width="170" height="170"><circle cx="85" cy="85" r="74" stroke="var(--panel2)" stroke-width="12" fill="none"/>
+                <circle id="socArc" cx="85" cy="85" r="74" stroke="var(--accent)" stroke-width="12" fill="none" stroke-linecap="round" stroke-dasharray="465 465" stroke-dashoffset="465"/></svg>
+              <div class="val"><b id="socVal">—</b><span>State of charge</span></div>
+            </div>
+            <div class="muted" id="capText">— / — Ah</div>
+            <div class="chips" id="chips"></div>
+          </div>
+          <div class="card">
+            <div class="kpis">
+              <div class="kpi big"><div class="k">Pack voltage</div><div class="v" id="kV">—</div></div>
+              <div class="kpi big"><div class="k">Current</div><div class="v" id="kI">—</div></div>
+              <div class="kpi big"><div class="k">Power</div><div class="v" id="kP">—</div></div>
+              <div class="kpi big"><div class="k">Cell delta</div><div class="v" id="kD">—</div></div>
+              <div class="kpi"><div class="k">Average cell</div><div class="v" id="kAvg">—</div></div>
+              <div class="kpi"><div class="k">Highest cell</div><div class="v" id="kMax">—</div></div>
+              <div class="kpi"><div class="k">Lowest cell</div><div class="v" id="kMin">—</div></div>
+              <div class="kpi"><div class="k">Balance current</div><div class="v" id="kBal">—</div></div>
+              <div class="kpi"><div class="k">Temperature 1</div><div class="v" id="kT1">—</div></div>
+              <div class="kpi"><div class="k">Temperature 2</div><div class="v" id="kT2">—</div></div>
+              <div class="kpi"><div class="k">MOS temperature</div><div class="v" id="kMos">—</div></div>
+              <div class="kpi"><div class="k">State of health</div><div class="v" id="kSoh">—</div></div>
+              <div class="kpi"><div class="k">Cycle count</div><div class="v" id="kCyc">—</div></div>
+              <div class="kpi"><div class="k">Cycle capacity</div><div class="v" id="kCycCap">—</div></div>
+              <div class="kpi"><div class="k">Run time</div><div class="v" id="kRun">—</div></div>
+              <div class="kpi"><div class="k">Time left (est.)</div><div class="v" id="kEta">—</div></div>
+            </div>
+          </div>
+        </div>
+        <div class="card">
+          <h3>Cells</h3>
+          <div class="cellsum" id="cellSum"></div>
+          <div class="cells" id="cells"></div>
+        </div>
+        <div class="charts">
+          <div class="card"><h3>Pack voltage · last 10 min</h3><canvas class="chart" id="chV"></canvas></div>
+          <div class="card"><h3>Current · last 10 min</h3><canvas class="chart" id="chI"></canvas></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- SETTINGS -->
+    <section class="tab" id="tab-settings">
+      <h2>Protection &amp; battery settings</h2>
+      <div class="toolbar">
+        <button id="btnReadSet">Read settings from BMS</button>
+        <span class="muted" id="setStamp">Not read yet</span>
+      </div>
+      <div class="setgroups" id="setGroups"></div>
+    </section>
+
+    <!-- CONTROL -->
+    <section class="tab" id="tab-control">
+      <h2>Control</h2>
+      <div class="switches">
+        <div class="card sw"><div><div class="t">Charge</div><div class="muted" id="swChgS">—</div></div><button class="toggle" data-reg="29" aria-label="Charge switch"></button></div>
+        <div class="card sw"><div><div class="t">Discharge</div><div class="muted" id="swDisS">—</div></div><button class="toggle" data-reg="30" aria-label="Discharge switch"></button></div>
+        <div class="card sw"><div><div class="t">Balance</div><div class="muted" id="swBalS">—</div></div><button class="toggle" data-reg="31" aria-label="Balance switch"></button></div>
+      </div>
+      <p class="muted" style="margin-top:14px">Switching changes the BMS immediately. Every change asks for confirmation first.</p>
+    </section>
+
+    <!-- DEVICE -->
+    <section class="tab" id="tab-device">
+      <h2>Device information</h2>
+      <div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(300px,1fr))">
+        <div class="card"><table id="devTable"><tbody></tbody></table></div>
+        <div class="card">
+          <h3>Protocol</h3>
+          <p class="muted" style="margin-top:0">Auto picks the frame layout from the hardware version (11 and newer use the 32-cell layout). Change it only if the numbers look wrong.</p>
+          <select id="proto"><option value="auto">Auto</option><option value="32">JK02 · 32 cells (HW ≥ 11)</option><option value="24">JK02 · 24 cells (HW &lt; 11)</option></select>
+          <h3 style="margin-top:18px">Last cell frame (hex)</h3>
+          <textarea class="hex" id="hexDump" readonly placeholder="Raw data appears here after connecting"></textarea>
+        </div>
+      </div>
+    </section>
+
+    <!-- ALARMS & LOG -->
+    <section class="tab" id="tab-alarms">
+      <h2>Alarms</h2>
+      <div class="card" style="margin-bottom:14px"><div class="alarms" id="alarmList"></div></div>
+      <div class="toolbar">
+        <h2 style="margin:0">Data log</h2><span class="spacer"></span>
+        <span class="muted" id="histCount">0 samples</span>
+        <button id="btnCsv">Export CSV</button>
+        <button id="btnClearLog">Clear</button>
+      </div>
+      <div class="card"><div class="log" id="log"></div></div>
+    </section>
+  </main>
+</div>
+
+<dialog id="dlg"><h3 id="dlgTitle" style="text-transform:none;letter-spacing:0;color:var(--text);font-size:16px">Confirm</h3><div id="dlgBody"></div>
+  <div class="acts"><button id="dlgNo">Cancel</button><button class="primary" id="dlgYes">Write to BMS</button></div></dialog>
+<div id="toast"></div>
+
+<script>
+"use strict";
+/* ---------- helpers ---------- */
+const $ = s => document.querySelector(s), $$ = s => [...document.querySelectorAll(s)];
+const fmt = (v, d = 2) => (v == null || !isFinite(v)) ? '—' : v.toFixed(d);
+const u16 = (d, o) => d[o] | d[o + 1] << 8;
+const i16 = (d, o) => { const v = u16(d, o); return v > 0x7fff ? v - 0x10000 : v; };
+const u32 = (d, o) => (d[o] | d[o + 1] << 8 | d[o + 2] << 16 | d[o + 3] << 24) >>> 0;
+const i32 = (d, o) => d[o] | d[o + 1] << 8 | d[o + 2] << 16 | d[o + 3] << 24;
+const ascii = (d, o, n) => { let s = ''; for (let i = o; i < o + n; i++) { if (!d[i]) break; s += String.fromCharCode(d[i]); } return s.trim(); };
+const hex = d => [...d].map(b => b.toString(16).padStart(2, '0')).join(' ');
+const store = { get(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }, set(k, v) { try { localStorage.setItem(k, v); } catch (e) {} } };
+const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+
+function toast(msg) { const t = $('#toast'); t.textContent = msg; t.classList.add('show'); clearTimeout(toast.h); toast.h = setTimeout(() => t.classList.remove('show'), 3200); }
+const logLines = [];
+function log(msg, cls = '') {
+  const ts = new Date().toLocaleTimeString();
+  logLines.push({ ts, msg, cls }); if (logLines.length > 400) logLines.shift();
+  const el = $('#log'); const div = document.createElement('div'); div.className = cls; div.textContent = `[${ts}] ${msg}`;
+  el.appendChild(div); while (el.children.length > 400) el.firstChild.remove(); el.scrollTop = el.scrollHeight;
+}
+
+/* ---------- protocol ---------- */
+const SVC = 0xffe0, CHR = 0xffe1;
+const CMD_DEVICE_INFO = 0x97, CMD_CELL_INFO = 0x96;
+const ALARMS = ['Charge overtemperature', 'Charge undertemperature', 'Coprocessor communication error', 'Cell undervoltage',
+  'Pack undervoltage', 'Discharge overcurrent', 'Discharge short circuit', 'Discharge overtemperature', 'Wire resistance',
+  'MOSFET overtemperature', 'Cell count ≠ setting', 'Current sensor anomaly', 'Cell overvoltage', 'Pack overvoltage',
+  'Charge overcurrent', 'Charge short circuit'];
+
+// register → setting definition. Byte offset in settings frame = 6 + (reg-1)*4
+const SETTINGS = [
+  [1, 'Smart sleep voltage', 'V', 1000, 'Cell voltage'], [2, 'Cell undervoltage protection', 'V', 1000, 'Cell voltage'],
+  [3, 'Cell undervoltage recovery', 'V', 1000, 'Cell voltage'], [4, 'Cell overvoltage protection', 'V', 1000, 'Cell voltage'],
+  [5, 'Cell overvoltage recovery', 'V', 1000, 'Cell voltage'], [6, 'Balance trigger voltage (Δ)', 'V', 1000, 'Cell voltage'],
+  [34, 'Balance start voltage', 'V', 1000, 'Cell voltage'], [7, 'SOC 100% voltage', 'V', 1000, 'Cell voltage'],
+  [8, 'SOC 0% voltage', 'V', 1000, 'Cell voltage'], [9, 'Request charge voltage (RCV)', 'V', 1000, 'Cell voltage'],
+  [10, 'Request float voltage (RFV)', 'V', 1000, 'Cell voltage'], [11, 'Power-off voltage', 'V', 1000, 'Cell voltage'],
+  [12, 'Max charge current', 'A', 1000, 'Current'], [13, 'Charge overcurrent delay', 's', 1, 'Current'],
+  [14, 'Charge overcurrent recovery', 's', 1, 'Current'], [15, 'Max discharge current', 'A', 1000, 'Current'],
+  [16, 'Discharge overcurrent delay', 's', 1, 'Current'], [17, 'Discharge overcurrent recovery', 's', 1, 'Current'],
+  [33, 'Short-circuit protection delay', 'µs', 1, 'Current'], [18, 'Short-circuit recovery', 's', 1, 'Current'],
+  [19, 'Max balance current', 'A', 1000, 'Current'],
+  [20, 'Charge overtemp protection', '°C', 10, 'Temperature'], [21, 'Charge overtemp recovery', '°C', 10, 'Temperature'],
+  [22, 'Discharge overtemp protection', '°C', 10, 'Temperature'], [23, 'Discharge overtemp recovery', '°C', 10, 'Temperature'],
+  [24, 'Charge undertemp protection', '°C', 10, 'Temperature'], [25, 'Charge undertemp recovery', '°C', 10, 'Temperature'],
+  [26, 'MOS overtemp protection', '°C', 10, 'Temperature'], [27, 'MOS overtemp recovery', '°C', 10, 'Temperature'],
+  [28, 'Cell count', '', 1, 'Battery'], [32, 'Battery capacity', 'Ah', 1000, 'Battery'],
+].map(([reg, label, unit, factor, group]) => ({ reg, label, unit, factor, group, off: 6 + (reg - 1) * 4 }));
+const SW = { 29: 'charge', 30: 'discharge', 31: 'balance' };
+
+function buildCmd(reg, value = 0, len = 0) {
+  const b = new Uint8Array(20);
+  b.set([0xAA, 0x55, 0x90, 0xEB, reg, len]);
+  const v = value >>> 0; b[6] = v & 255; b[7] = v >>> 8 & 255; b[8] = v >>> 16 & 255; b[9] = v >>> 24 & 255;
+  let s = 0; for (let i = 0; i < 19; i++) s += b[i]; b[19] = s & 255;
+  return b;
+}
+
+const S = { mode: 'off', info: null, hwMajor: null, settings: null, setStamp: null, cell: null, history: [], lastCell: 0, lastHist: 0 };
+function is32() {
+  const p = $('#proto').value;
+  if (p === '32') return true; if (p === '24') return false;
+  return S.hwMajor == null || S.hwMajor >= 11;
+}
+
+let rx = new Uint8Array(0);
+function onChunk(chunk) {
+  if (chunk[0] === 0x55 && chunk[1] === 0xAA && chunk[2] === 0xEB && chunk[3] === 0x90) rx = chunk.slice();
+  else if (chunk[0] === 0xAA && chunk[1] === 0x55) return; // command echo / ack
+  else { if (!rx.length) return; const n = new Uint8Array(rx.length + chunk.length); n.set(rx); n.set(chunk, rx.length); rx = n; }
+  if (rx.length >= 300) { const f = rx.slice(0, 300); rx = new Uint8Array(0); handleFrame(f); }
+}
+function handleFrame(d) {
+  let s = 0; for (let i = 0; i < 299; i++) s += d[i];
+  if ((s & 255) !== d[299]) { log('Frame checksum mismatch – ignored', 'w'); return; }
+  if (d[4] === 0x01) decodeSettings(d);
+  else if (d[4] === 0x02) decodeCell(d);
+  else if (d[4] === 0x03) decodeInfo(d);
+}
+
+function decodeInfo(d) {
+  S.info = {
+    'Model / vendor': ascii(d, 6, 16), 'Hardware version': ascii(d, 22, 8), 'Software version': ascii(d, 30, 8),
+    'Device uptime': fmtDur(u32(d, 38)), 'Power-on count': u32(d, 42), 'Device name': ascii(d, 46, 16),
+    'Manufacturing date': ascii(d, 78, 8), 'Serial number': ascii(d, 86, 11), 'User data': ascii(d, 102, 16),
+  };
+  const m = parseFloat(S.info['Hardware version']); S.hwMajor = isFinite(m) ? Math.floor(m) : null;
+  log(`Device info: ${S.info['Model / vendor']} HW ${S.info['Hardware version']} SW ${S.info['Software version']} → ${is32() ? '32' : '24'}-cell layout`, 's');
+  if (S.info['Device name']) $('#connText').textContent = S.info['Device name'] + (S.mode === 'demo' ? ' (demo)' : '');
+  renderDevice();
+}
+
+function decodeSettings(d) {
+  const v = {};
+  for (const s of SETTINGS) { const raw = s.unit === '°C' ? i32(d, s.off) : u32(d, s.off); v[s.reg] = raw / s.factor; }
+  for (const r of [29, 30, 31]) v[r] = u32(d, 6 + (r - 1) * 4) ? 1 : 0;
+  S.settings = v; S.setStamp = new Date();
+  log('Settings received', 's');
+  renderSettings(); renderControl();
+}
+
+function decodeCell(d) {
+  const s32 = is32(); let o = s32 ? 16 : 0; const n = s32 ? 32 : 24;
+  const mask = u32(d, 54 + o);
+  const cells = [];
+  for (let i = 0; i < n; i++) {
+    const v = u16(d, 6 + i * 2) / 1000, r = u16(d, 64 + o + i * 2) / 1000;
+    const on = mask ? (mask >>> i) & 1 : v > 0;
+    if (on) cells.push({ i: i + 1, v, r });
+  }
+  const c = { cells, avg: u16(d, 58 + o) / 1000, delta: u16(d, 60 + o) / 1000, maxIdx: d[62 + o] + 1, minIdx: d[63 + o] + 1 };
+  o *= 2;
+  c.mos = (s32 ? i16(d, 112 + o) : i16(d, 134 + o)) / 10;
+  c.voltage = u32(d, 118 + o) / 1000;
+  c.current = i32(d, 126 + o) / 1000;
+  c.power = c.voltage * c.current;
+  c.t1 = i16(d, 130 + o) / 10; c.t2 = i16(d, 132 + o) / 10;
+  c.alarms = s32 ? (d[134 + o] << 8 | d[135 + o]) : (d[136 + o] << 8 | d[137 + o]);
+  c.balCur = i16(d, 138 + o) / 1000; c.balAct = d[140 + o]; c.soc = d[141 + o];
+  c.remain = u32(d, 142 + o) / 1000; c.nominal = u32(d, 146 + o) / 1000;
+  c.cycles = u32(d, 150 + o); c.cycleCap = u32(d, 154 + o) / 1000; c.soh = d[158 + o];
+  c.runtime = u32(d, 162 + o); c.chg = d[166 + o]; c.dis = d[167 + o];
+  const prevAlarms = S.cell ? S.cell.alarms : 0;
+  S.cell = c; S.lastCell = Date.now();
+  if (c.alarms !== prevAlarms) {
+    const act = ALARMS.filter((_, b) => c.alarms >> b & 1);
+    log(act.length ? 'Alarm: ' + act.join(', ') : 'Alarms cleared', act.length ? 'e' : 's');
+  }
+  $('#hexDump').value = hex(d);
+  const now = Date.now();
+  if (now - S.lastHist >= 1000) {
+    S.lastHist = now;
+    const vs = cells.map(x => x.v);
+    S.history.push({ t: now, V: c.voltage, I: c.current, P: c.power, soc: c.soc, min: Math.min(...vs), max: Math.max(...vs), delta: c.delta, t1: c.t1, t2: c.t2, mos: c.mos });
+    if (S.history.length > 86400) S.history.shift();
+  }
+  scheduleRender();
+}
+
+/* ---------- Bluetooth transport ---------- */
+const BT = { dev: null, ch: null, q: Promise.resolve(), userClose: false, wd: null, gen: 0, att: 0, waiting: false };
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+const withTimeout = (p, ms) => Promise.race([p, new Promise((_, rej) => setTimeout(() => rej(new Error('timed out')), ms))]);
+
+/* --- remembered devices: browser keeps the Bluetooth permission, we keep names + last-used time --- */
+const canRemember = () => !!(navigator.bluetooth && navigator.bluetooth.getDevices);
+let saved = [], countdown = null;
+const knownList = () => { try { return JSON.parse(store.get('knownBms') || '[]'); } catch (e) { return []; } };
+function remember(dev) {
+  const l = knownList().filter(x => x.id !== dev.id);
+  l.unshift({ id: dev.id, name: dev.name || 'BMS', last: Date.now() });
+  store.set('knownBms', JSON.stringify(l.slice(0, 30)));
+}
+async function loadSaved() {
+  let devs = [];
+  if (canRemember()) { try { devs = await navigator.bluetooth.getDevices(); } catch (e) { log('Could not read saved devices: ' + e.message, 'w'); } }
+  const k = knownList();
+  saved = devs.map(d => { const m = k.find(x => x.id === d.id) || {}; return { dev: d, id: d.id, name: d.name || m.name || 'BMS', last: m.last || 0 }; })
+    .sort((a, b) => b.last - a.last);
+  renderSaved();
+  return saved;
+}
+function ago(t) {
+  if (!t) return 'Not connected yet';
+  const s = (Date.now() - t) / 1000;
+  return 'Last connected ' + (s < 3600 ? Math.max(1, Math.round(s / 60)) + ' min ago' : s < 86400 ? Math.round(s / 3600) + ' h ago' : Math.round(s / 86400) + ' days ago');
+}
+function renderSaved() {
+  const sel = $('#savedSel');
+  sel.hidden = !saved.length;
+  sel.innerHTML = '<option value="">Saved BMS…</option>' + saved.map(s => `<option value="${esc(s.id)}"${BT.dev && BT.dev.id === s.id ? ' selected' : ''}>${esc(s.name)}</option>`).join('');
+  const box = $('#savedList');
+  if (!canRemember()) {
+    const last = knownList()[0];
+    box.innerHTML = `<div class="cd" style="border-color:var(--warn);display:block"><b>⚠ Turn on auto-connect (one time)</b><br>Your browser needs 2 settings so it can remember your BMS:<ol style="margin:6px 0 6px 18px;padding:0">
+      <li>Copy <code>chrome://flags/#enable-web-bluetooth-new-permissions-backend</code> <button data-copy="chrome://flags/#enable-web-bluetooth-new-permissions-backend">Copy</button> into the address bar → set to <b>Enabled</b></li>
+      <li>Copy <code>chrome://flags/#enable-experimental-web-platform-features</code> <button data-copy="chrome://flags/#enable-experimental-web-platform-features">Copy</button> → set to <b>Enabled</b></li>
+      <li>Click <b>Relaunch</b>, come back here and pair your BMS once.</li></ol><span class="muted">(In Edge, use <code>edge://flags</code> instead.)</span></div>` +
+      (last ? `<div class="saved"><div><b>${esc(last.name)}</b> <span class="chip info">Last used</span><div class="muted">${ago(last.last)}</div></div><span class="spacer"></span><button class="primary" id="quickRe">Reconnect</button></div>` : '');
+    return;
+  }
+  if (!saved.length) { box.innerHTML = ''; return; }
+  box.innerHTML = '<h3>Saved BMS</h3>' +
+    (countdown ? `<div class="cd"><span>Connecting to <b>${esc(countdown.s.name)}</b> in <b id="cdN">${countdown.n}</b> s…</span><span class="spacer"></span><button class="primary" id="cdNow">Connect now</button><button id="cdStop">Cancel</button></div>` : '') +
+    saved.map((s, k) => `<div class="saved"><div><b>${esc(s.name)}</b>${k === 0 && s.last ? ' <span class="chip info">Last used</span>' : ''}<div class="muted">${ago(s.last)}</div></div><span class="spacer"></span><button class="primary" data-conn="${esc(s.id)}">Connect</button><button class="danger" data-forget="${esc(s.id)}">Forget</button></div>`).join('');
+}
+function startCountdown(s) {
+  countdown = { s, n: 5 }; renderSaved();
+  countdown.t = setInterval(() => {
+    if (!countdown) return;
+    if (--countdown.n <= 0) { const x = countdown.s; stopCountdown(); connectKnown(x.dev); }
+    else { const el = $('#cdN'); if (el) el.textContent = countdown.n; }
+  }, 1000);
+}
+function stopCountdown() { if (!countdown) return; clearInterval(countdown.t); countdown = null; renderSaved(); }
+async function autoStart() {
+  const list = await loadSaved();
+  if (!list.length || S.mode !== 'off') return;
+  if (list.length === 1) { log('Auto-connecting to ' + list[0].name); connectKnown(list[0].dev); }
+  else { log(`${list.length} saved BMS – auto-connecting to the last used one in 5 s`); startCountdown(list[0]); }
+}
+async function forget(id) {
+  const s = saved.find(x => x.id === id); if (!s) return;
+  if (!await confirmBox('Forget this BMS?', `<p>Remove <b>${esc(s.name)}</b> from saved devices? You can pair it again any time.</p>`, 'Forget')) return;
+  if (BT.dev && BT.dev.id === id) disconnect();
+  try { if (s.dev.forget) await s.dev.forget(); } catch (e) {}
+  store.set('knownBms', JSON.stringify(knownList().filter(x => x.id !== id)));
+  log('Forgot ' + s.name); await loadSaved();
+}
+
+async function btConnect() {
+  if (!navigator.bluetooth) { toast('Bluetooth is not available here. Open the app in Microsoft Edge or Google Chrome.'); return; }
+  stopCountdown();
+  try {
+    const all = $('#allDev').checked;
+    const opts = all ? { acceptAllDevices: true, optionalServices: [SVC] }
+      : { filters: [{ services: [SVC] }, { namePrefix: 'JK' }], optionalServices: [SVC] };
+    const dev = await navigator.bluetooth.requestDevice(opts);
+    await connectKnown(dev);
+  } catch (e) {
+    if (e.name !== 'NotFoundError') { log('Connect failed: ' + e.message, 'e'); toast('Could not connect: ' + e.message); }
+  }
+}
+async function connectKnown(dev) {
+  stopCountdown();
+  if (BT.dev && BT.dev.id === dev.id && BT.ch) { toast('Already connected to ' + (dev.name || 'this BMS')); return; }
+  if (S.mode === 'demo') stopDemo();
+  if (BT.dev) {
+    BT.dev.removeEventListener('gattserverdisconnected', onBtDisconnect); BT.gen++; clearInterval(BT.wd);
+    try { if (BT.dev.gatt.connected) BT.dev.gatt.disconnect(); } catch (e) {}
+    BT.ch = null;
+  }
+  BT.dev = dev; BT.userClose = false;
+  dev.addEventListener('gattserverdisconnected', onBtDisconnect);
+  S.info = S.settings = S.setStamp = S.cell = S.hwMajor = null; S.history = [];
+  renderDevice(); renderSettings(); renderStatus(); renderSaved();
+  await openWithWait();
+}
+// Keep trying until connected: direct connect first, then wait for the BMS to advertise (in range / powered on)
+async function openWithWait() {
+  const gen = ++BT.gen, dev = BT.dev, name = dev.name || 'BMS';
+  BT.waiting = true;
+  try {
+    for (let n = 1; gen === BT.gen && !BT.userClose; n++) {
+      setMode('busy', `Connecting to ${name}…` + (n > 1 ? ` (attempt ${n})` : ''));
+      const att = ++BT.att;
+      try { await withTimeout(btOpen(dev, () => gen === BT.gen && att === BT.att), 15000); return true; }
+      catch (e) { BT.att++; if (gen !== BT.gen) return false; log(`Connect to ${name} failed: ${e.message}`, 'w'); try { dev.gatt.disconnect(); } catch (x) {} }
+      if (gen !== BT.gen || BT.userClose) break;
+      setMode('busy', `Waiting for ${name} – is the BMS on and in range?`);
+      await waitForAdvert(dev, n < 3 ? 3000 : 10000);
+    }
+    return false;
+  } finally { if (gen === BT.gen) BT.waiting = false; }
+}
+function waitForAdvert(dev, ms) {
+  return new Promise(res => {
+    const ac = new AbortController(); let done = false;
+    const finish = () => { if (done) return; done = true; clearTimeout(t); dev.removeEventListener('advertisementreceived', finish); try { ac.abort(); } catch (e) {} res(); };
+    const t = setTimeout(finish, ms);
+    if (dev.watchAdvertisements) { dev.addEventListener('advertisementreceived', finish); dev.watchAdvertisements({ signal: ac.signal }).catch(() => {}); }
+  });
+}
+async function btOpen(dev, alive) {
+  const server = await dev.gatt.connect();
+  if (!alive()) throw new Error('cancelled');
+  const svc = await server.getPrimaryService(SVC);
+  const ch = await svc.getCharacteristic(CHR);
+  ch.addEventListener('characteristicvaluechanged', e => { if (BT.ch !== ch) return; const v = e.target.value; onChunk(new Uint8Array(v.buffer, v.byteOffset, v.byteLength).slice()); });
+  await ch.startNotifications();
+  if (!alive()) throw new Error('cancelled');
+  BT.ch = ch; rx = new Uint8Array(0);
+  setMode('ble', dev.name || 'BMS');
+  log('Connected to ' + (dev.name || dev.id), 's');
+  remember(dev); loadSaved();
+  await send(buildCmd(CMD_DEVICE_INFO));
+  await new Promise(r => setTimeout(r, 400));
+  await send(buildCmd(CMD_CELL_INFO));
+  clearInterval(BT.wd);
+  BT.wd = setInterval(() => { if (BT.ch && Date.now() - S.lastCell > 8000) { log('No data for 8 s – requesting again', 'w'); send(buildCmd(CMD_CELL_INFO)).catch(() => {}); } }, 4000);
+}
+function send(bytes) {
+  BT.q = BT.q.then(async () => {
+    if (!BT.ch) throw new Error('Not connected');
+    if (BT.ch.properties.writeWithoutResponse && BT.ch.writeValueWithoutResponse) await BT.ch.writeValueWithoutResponse(bytes);
+    else await BT.ch.writeValue(bytes);
+  });
+  const p = BT.q; BT.q = BT.q.catch(() => {}); return p;
+}
+function onBtDisconnect(e) {
+  if (e && e.target !== BT.dev) return;
+  BT.ch = null; clearInterval(BT.wd);
+  if (BT.waiting || BT.userClose) return;
+  log('Connection lost – reconnecting automatically', 'w'); toast('Connection lost – reconnecting…');
+  openWithWait();
+}
+function disconnect() {
+  if (S.mode === 'demo') { stopDemo(); return; }
+  BT.userClose = true; BT.gen++; BT.waiting = false; clearInterval(BT.wd);
+  try { if (BT.dev && BT.dev.gatt.connected) BT.dev.gatt.disconnect(); } catch (e) {}
+  BT.ch = null; setMode('off'); renderSaved(); log('Disconnected');
+}
+
+/* ---------- writing settings ---------- */
+function confirmBox(title, html, yes = 'Write to BMS') {
+  return new Promise(res => {
+    const dlg = $('#dlg'); $('#dlgTitle').textContent = title; $('#dlgBody').innerHTML = html; $('#dlgYes').textContent = yes;
+    const done = v => { dlg.close(); $('#dlgYes').onclick = $('#dlgNo').onclick = null; res(v); };
+    $('#dlgYes').onclick = () => done(true); $('#dlgNo').onclick = () => done(false); dlg.oncancel = () => done(false);
+    dlg.showModal();
+  });
+}
+async function writeReg(reg, value, label, shown) {
+  if (S.mode === 'off' || S.mode === 'busy') { toast('Connect to a BMS first'); return false; }
+  const ok = await confirmBox('Write to BMS?', `<p>Set <b>${esc(label)}</b> to <b>${esc(shown)}</b>.</p><p class="muted">Wrong protection values can damage the battery. Double-check before writing.</p>`);
+  if (!ok) return false;
+  if (S.mode === 'demo') { demoWrite(reg, value); }
+  else {
+    try {
+      await send(buildCmd(reg, value, 4));
+      setTimeout(() => send(buildCmd(CMD_CELL_INFO)).catch(() => {}), 600); // re-read settings
+    } catch (e) { log('Write failed: ' + e.message, 'e'); toast('Write failed: ' + e.message); return false; }
+  }
+  log(`Wrote ${label} = ${shown}`, 's'); toast(`${label} set to ${shown}`);
+  return true;
+}
+
+/* ---------- UI ---------- */
+function setMode(m, text) {
+  S.mode = m;
+  $('#dot').className = 'dot ' + ({ ble: 'on', demo: 'demo', busy: 'busy' }[m] || '');
+  $('#connText').textContent = text || (m === 'off' ? 'Not connected' : $('#connText').textContent);
+  $('#btnDisconnect').disabled = m === 'off';
+  $('#btnDemo').textContent = m === 'demo' ? 'Stop demo' : 'Demo';
+  const live = m === 'ble' || m === 'demo';
+  $('#btnReadSet').disabled = !live;
+  $$('.toggle').forEach(b => b.disabled = !live);
+  renderSettings();
+  if (m === 'off') { S.cell = null; renderStatus(); }
+}
+
+let rq = false;
+function scheduleRender() { if (rq) return; rq = true; requestAnimationFrame(() => { rq = false; renderStatus(); renderAlarms(); renderControl(); }); }
+
+function fmtDur(sec) { const d = Math.floor(sec / 86400), h = Math.floor(sec % 86400 / 3600), m = Math.floor(sec % 3600 / 60); return d ? `${d}d ${h}h ${m}m` : `${h}h ${m}m`; }
+const kv = (id, v, unit, cls) => { const el = $('#' + id); el.innerHTML = v === '—' ? '—' : `${v}<small>${unit}</small>`; el.className = 'v' + (cls ? ' ' + cls : ''); };
+
+function renderStatus() {
+  const c = S.cell;
+  $('#statusEmpty').hidden = !!c; $('#statusBody').hidden = !c;
+  if (!c) return;
+  $('#socVal').textContent = c.soc + '%';
+  $('#socArc').setAttribute('stroke-dashoffset', 465 * (1 - Math.min(100, c.soc) / 100));
+  $('#socArc').setAttribute('stroke', c.soc < 15 ? 'var(--bad)' : c.soc < 30 ? 'var(--warn)' : 'var(--accent)');
+  $('#capText').textContent = `${fmt(c.remain, 1)} / ${fmt(c.nominal, 1)} Ah`;
+  const chip = (t, cls) => `<span class="chip ${cls}">${t}</span>`;
+  const st = c.current > 0.05 ? chip('Charging', 'info') : c.current < -0.05 ? chip('Discharging', 'info') : chip('Idle', '');
+  $('#chips').innerHTML = st + chip('CHG ' + (c.chg ? 'on' : 'off'), c.chg ? 'on' : 'off') + chip('DSG ' + (c.dis ? 'on' : 'off'), c.dis ? 'on' : 'off')
+    + chip(c.balAct === 1 ? 'Balancing ↑' : c.balAct === 2 ? 'Balancing ↓' : 'Balance idle', c.balAct ? 'on' : '');
+  kv('kV', fmt(c.voltage, 2), 'V');
+  kv('kI', fmt(c.current, 2), 'A', c.current > 0.05 ? 'pos' : c.current < -0.05 ? 'neg' : '');
+  kv('kP', Math.abs(c.power) >= 1000 ? fmt(c.power / 1000, 2) : fmt(c.power, 0), Math.abs(c.power) >= 1000 ? 'kW' : 'W');
+  kv('kD', fmt(c.delta * 1000, 0), 'mV', c.delta > 0.05 ? 'neg' : '');
+  kv('kAvg', fmt(c.avg, 3), 'V');
+  const mx = c.cells.find(x => x.i === c.maxIdx), mn = c.cells.find(x => x.i === c.minIdx);
+  kv('kMax', mx ? fmt(mx.v, 3) : '—', mx ? `V · #${mx.i}` : '');
+  kv('kMin', mn ? fmt(mn.v, 3) : '—', mn ? `V · #${mn.i}` : '');
+  kv('kBal', fmt(c.balCur, 3), 'A');
+  kv('kT1', fmt(c.t1, 1), '°C'); kv('kT2', fmt(c.t2, 1), '°C'); kv('kMos', fmt(c.mos, 1), '°C', c.mos > 70 ? 'neg' : '');
+  kv('kSoh', c.soh, '%'); kv('kCyc', c.cycles, ''); kv('kCycCap', fmt(c.cycleCap, 0), 'Ah');
+  $('#kRun').textContent = fmtDur(c.runtime);
+  let eta = '—';
+  if (c.current < -0.3) eta = fmtDur(c.remain / -c.current * 3600) + ' to empty';
+  else if (c.current > 0.3) eta = fmtDur((c.nominal - c.remain) / c.current * 3600) + ' to full';
+  $('#kEta').textContent = eta; $('#kEta').style.fontSize = eta.length > 12 ? '15px' : '';
+
+  const lo = S.settings ? S.settings[2] : 2.6, hi = S.settings ? S.settings[4] : 3.65;
+  $('#cellSum').innerHTML = `<span>Cells <b>${c.cells.length}</b></span><span>Average <b>${fmt(c.avg, 3)} V</b></span><span>Delta <b>${fmt(c.delta * 1000, 0)} mV</b></span><span class="muted">Red = highest · Blue = lowest</span>`;
+  const box = $('#cells');
+  if (box.children.length !== c.cells.length) box.innerHTML = c.cells.map(() => '<div class="cell"><div class="n"><span></span><span></span></div><div class="cv"></div><div class="cr"></div><div class="bar"><i></i></div></div>').join('');
+  c.cells.forEach((x, k) => {
+    const el = box.children[k];
+    el.className = 'cell' + (x.i === c.maxIdx ? ' max' : x.i === c.minIdx ? ' min' : '');
+    el.children[0].children[0].textContent = 'Cell ' + String(x.i).padStart(2, '0');
+    el.children[0].children[1].textContent = x.i === c.maxIdx ? '▲' : x.i === c.minIdx ? '▼' : '';
+    el.children[1].textContent = fmt(x.v, 3) + ' V';
+    el.children[2].textContent = 'Wire ' + fmt(x.r * 1000, 0) + ' mΩ';
+    el.children[3].firstChild.style.width = Math.max(0, Math.min(100, (x.v - lo) / (hi - lo) * 100)) + '%';
+  });
+  drawChart($('#chV'), 'V', '--accent', 'V', 2);
+  drawChart($('#chI'), 'I', '--accent2', 'A', 1);
+  $('#histCount').textContent = S.history.length + ' samples';
+}
+
+function drawChart(cv, key, colorVar, unit, dec) {
+  const cs = getComputedStyle(document.documentElement);
+  const col = cs.getPropertyValue(colorVar).trim(), mut = cs.getPropertyValue('--muted').trim(), bd = cs.getPropertyValue('--border').trim();
+  const dpr = window.devicePixelRatio || 1, w = cv.clientWidth, h = cv.clientHeight;
+  if (!w) return;
+  cv.width = w * dpr; cv.height = h * dpr;
+  const g = cv.getContext('2d'); g.scale(dpr, dpr); g.clearRect(0, 0, w, h);
+  g.font = '11px system-ui,sans-serif'; g.fillStyle = mut;
+  const now = Date.now(), win = 600000, pts = S.history.filter(p => p.t > now - win);
+  if (pts.length < 2) { g.fillText('Collecting data…', 8, h / 2); return; }
+  let mn = Math.min(...pts.map(p => p[key])), mx = Math.max(...pts.map(p => p[key]));
+  if (key === 'I') { mn = Math.min(mn, 0); mx = Math.max(mx, 0); }
+  const pad = (mx - mn) * 0.12 || 1; mn -= pad; mx += pad;
+  const L = 52, R = 8, T = 8, B = 20, X = t => L + (t - (now - win)) / win * (w - L - R), Y = v => T + (1 - (v - mn) / (mx - mn)) * (h - T - B);
+  g.strokeStyle = bd; g.lineWidth = 1; g.textAlign = 'right'; g.textBaseline = 'middle';
+  for (let k = 0; k <= 4; k++) { const v = mn + (mx - mn) * k / 4, y = Y(v); g.beginPath(); g.moveTo(L, y); g.lineTo(w - R, y); g.stroke(); g.fillText(v.toFixed(dec) + ' ' + unit, L - 6, y); }
+  g.textAlign = 'center'; g.textBaseline = 'alphabetic';
+  for (let m = 10; m >= 0; m -= 2) g.fillText(m ? `-${m}m` : 'now', X(now - m * 60000), h - 4);
+  if (key === 'I' && mn < 0 && mx > 0) { g.strokeStyle = mut; g.setLineDash([3, 3]); g.beginPath(); g.moveTo(L, Y(0)); g.lineTo(w - R, Y(0)); g.stroke(); g.setLineDash([]); }
+  g.strokeStyle = col; g.lineWidth = 2; g.lineJoin = 'round'; g.beginPath();
+  pts.forEach((p, k) => k ? g.lineTo(X(p.t), Y(p[key])) : g.moveTo(X(p.t), Y(p[key]))); g.stroke();
+}
+
+function renderSettings() {
+  const v = S.settings, live = S.mode === 'ble' || S.mode === 'demo';
+  $('#setStamp').textContent = S.setStamp ? 'Last read ' + S.setStamp.toLocaleTimeString() : 'Not read yet';
+  const groups = {};
+  SETTINGS.forEach(s => (groups[s.group] = groups[s.group] || []).push(s));
+  $('#setGroups').innerHTML = Object.entries(groups).map(([g, list]) => `<div class="card"><h3>${g}</h3><table><thead><tr><th>Setting</th><th>Current</th><th>New value</th><th></th></tr></thead><tbody>${
+    list.map(s => { const dec = s.factor === 1000 ? 3 : s.factor === 10 ? 1 : 0; const cur = v ? fmt(v[s.reg], dec) : '—';
+      return `<tr><td>${s.label}</td><td class="num">${cur} ${s.unit}</td><td><input type="number" step="${1 / s.factor}" data-reg="${s.reg}" value="${v ? fmt(v[s.reg], dec) : ''}" ${live && v ? '' : 'disabled'}></td><td><button data-write="${s.reg}" ${live && v ? '' : 'disabled'}>Write</button></td></tr>`; }).join('')
+  }</tbody></table></div>`).join('');
+}
+$('#setGroups').addEventListener('click', async e => {
+  const reg = +e.target.dataset.write; if (!reg) return;
+  const s = SETTINGS.find(x => x.reg === reg), inp = $(`input[data-reg="${reg}"]`), val = parseFloat(inp.value);
+  if (!isFinite(val)) { toast('Enter a number'); return; }
+  if (s.unit !== '°C' && val < 0) { toast('Value must be positive'); return; }
+  await writeReg(reg, Math.round(val * s.factor), s.label, `${val} ${s.unit}`);
+});
+
+function renderControl() {
+  const v = S.settings, c = S.cell;
+  const desc = (reg, live) => !v ? 'Unknown – read settings first' : `Switch ${v[reg] ? 'ON' : 'OFF'}` + (live == null ? '' : ` · MOSFET ${live ? 'on' : 'off'}`);
+  $('#swChgS').textContent = desc(29, c && c.chg); $('#swDisS').textContent = desc(30, c && c.dis);
+  $('#swBalS').textContent = desc(31, c ? c.balAct : null).replace(/MOSFET (on|off)/, c && c.balAct ? 'balancing now' : 'not balancing');
+  $$('.toggle').forEach(b => b.classList.toggle('on', !!(v && v[b.dataset.reg])));
+}
+$$('.toggle').forEach(b => b.addEventListener('click', async () => {
+  if (!S.settings) { toast('Read settings first'); return; }
+  const reg = +b.dataset.reg, next = S.settings[reg] ? 0 : 1;
+  await writeReg(reg, next, SW[reg][0].toUpperCase() + SW[reg].slice(1) + ' switch', next ? 'ON' : 'OFF');
+}));
+
+function renderDevice() {
+  const rows = S.info ? Object.entries(S.info) : [['Status', 'Connect to read device information']];
+  $('#devTable tbody').innerHTML = rows.map(([k, v]) => `<tr><th style="width:45%">${esc(k)}</th><td>${esc(v || '—')}</td></tr>`).join('');
+}
+function renderAlarms() {
+  const a = S.cell ? S.cell.alarms : 0;
+  $('#alarmList').innerHTML = ALARMS.map((t, b) => `<div class="alarm ${a >> b & 1 ? 'act' : ''}"><i></i>${t}</div>`).join('');
+  let n = 0; for (let b = 0; b < 16; b++) n += a >> b & 1;
+  const bd = $('#alarmBadge'); bd.textContent = n; bd.style.display = n ? 'inline-block' : 'none';
+}
+
+function exportCsv() {
+  if (!S.history.length) { toast('No data recorded yet'); return; }
+  const head = 'time,voltage_V,current_A,power_W,soc_pct,min_cell_V,max_cell_V,delta_V,temp1_C,temp2_C,mos_C';
+  const rows = S.history.map(p => [new Date(p.t).toISOString(), p.V.toFixed(3), p.I.toFixed(3), p.P.toFixed(1), p.soc, p.min.toFixed(3), p.max.toFixed(3), p.delta.toFixed(3), p.t1, p.t2, p.mos].join(','));
+  const blob = new Blob([head + '\n' + rows.join('\n')], { type: 'text/csv' });
+  const a = document.createElement('a'); const ts = new Date().toISOString().slice(0, 16).replace(/[-:T]/g, '');
+  a.href = URL.createObjectURL(blob); a.download = `bms-log-${ts}.csv`; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+}
+
+/* ---------- demo (builds real protocol frames, runs them through the same decoder) ---------- */
+const demo = { timer: null, t0: 0, soc: 72.4, cap: 280, cycles: 37, cnt: 0, offs: [], res: [],
+  set: { 1: 3300, 2: 2600, 3: 2900, 4: 3650, 5: 3400, 6: 5, 7: 3450, 8: 2900, 9: 3500, 10: 3400, 11: 2500, 12: 100000, 13: 30, 14: 60,
+    15: 150000, 16: 300, 17: 60, 18: 60, 19: 2000, 20: 700, 21: 600, 22: 700, 23: 600, 24: 20, 25: 50, 26: 1000, 27: 800, 28: 16,
+    29: 1, 30: 1, 31: 1, 32: 280000, 33: 1500, 34: 3400 } };
+const w16 = (d, o, v) => { d[o] = v & 255; d[o + 1] = v >> 8 & 255; };
+const w32 = (d, o, v) => { v >>>= 0; d[o] = v & 255; d[o + 1] = v >>> 8 & 255; d[o + 2] = v >>> 16 & 255; d[o + 3] = v >>> 24 & 255; };
+const wstr = (d, o, s) => { for (let i = 0; i < s.length; i++) d[o + i] = s.charCodeAt(i); };
+function demoFrame(type, fill) {
+  const d = new Uint8Array(300); d.set([0x55, 0xAA, 0xEB, 0x90, type, demo.cnt++ & 255]); fill(d);
+  let s = 0; for (let i = 0; i < 299; i++) s += d[i]; d[299] = s & 255; return d;
+}
+function feed(d) { for (let i = 0; i < d.length; i += 128) onChunk(d.slice(i, i + 128)); } // simulate BLE chunking
+function demoInfo() { return demoFrame(3, d => { wstr(d, 6, 'JK_B2A24S15P'); wstr(d, 22, '11.XW'); wstr(d, 30, '11.26'); w32(d, 38, 1843200); w32(d, 42, 12); wstr(d, 46, 'Demo-BMS'); wstr(d, 78, '230514'); wstr(d, 86, '4031852371'); wstr(d, 102, 'Demo pack'); }); }
+function demoSettings() { return demoFrame(1, d => { for (const r in demo.set) w32(d, 6 + (r - 1) * 4, demo.set[r]); }); }
+function demoCell(at = Date.now()) {
+  const t = (at - demo.t0) / 1000;
+  let I = 28 * Math.sin(t / 45) + 6 * Math.sin(t / 6.3);
+  if (!demo.set[29] && I > 0) I = 0; if (!demo.set[30] && I < 0) I = 0;
+  demo.soc = Math.max(1, Math.min(100, demo.soc + I / demo.cap / 36));
+  const n = 16, base = 3.20 + demo.soc / 100 * 0.14 + I * 0.0009;
+  const vs = demo.offs.map(o => Math.round((base + o + (Math.random() - .5) * 0.002) * 1000));
+  const mx = vs.indexOf(Math.max(...vs)), mn = vs.indexOf(Math.min(...vs)), sum = vs.reduce((a, b) => a + b, 0);
+  const bal = demo.set[31] && vs[mx] - vs[mn] >= demo.set[6] && vs[mx] / 1000 >= demo.set[34] / 1000 - 0.1;
+  return demoFrame(2, d => {
+    const o = 16, o2 = 32;
+    vs.forEach((v, i) => w16(d, 6 + i * 2, v));
+    w32(d, 54 + o, (1 << n) - 1); w16(d, 58 + o, Math.round(sum / n)); w16(d, 60 + o, vs[mx] - vs[mn]); d[62 + o] = mx; d[63 + o] = mn;
+    demo.res.forEach((r, i) => w16(d, 64 + o + i * 2, r));
+    w16(d, 112 + o2, Math.round((31 + Math.abs(I) * 0.12) * 10));
+    w32(d, 118 + o2, sum); w32(d, 122 + o2, Math.round(Math.abs(sum * I))); w32(d, 126 + o2, Math.round(I * 1000));
+    w16(d, 130 + o2, 254 + Math.round(Math.sin(t / 90) * 8)); w16(d, 132 + o2, 249);
+    w16(d, 138 + o2, bal ? (I >= 0 ? 412 : -398) : 0); d[140 + o2] = bal ? (I >= 0 ? 1 : 2) : 0;
+    d[141 + o2] = Math.round(demo.soc); w32(d, 142 + o2, Math.round(demo.soc / 100 * demo.cap * 1000)); w32(d, 146 + o2, demo.set[32]);
+    w32(d, 150 + o2, demo.cycles); w32(d, 154 + o2, demo.cycles * demo.cap * 1000); d[158 + o2] = 100;
+    w32(d, 162 + o2, 1843200 + Math.round(t)); d[166 + o2] = demo.set[29]; d[167 + o2] = demo.set[30];
+  });
+}
+function startDemo() {
+  stopCountdown();
+  if (BT.dev && S.mode !== 'off') disconnect();
+  demo.t0 = Date.now() - 180000; demo.offs = Array.from({ length: 16 }, () => (Math.random() - .5) * 0.018);
+  demo.res = Array.from({ length: 16 }, () => 45 + Math.round(Math.random() * 30));
+  S.history = []; setMode('demo', 'Demo-BMS (demo)'); log('Demo started – simulated BMS data', 's');
+  feed(demoInfo()); setTimeout(() => feed(demoSettings()), 300);
+  // pre-fill 3 minutes of history so the charts have something to show
+  for (let k = 180; k > 0; k--) { const fr = demoCell(Date.now() - k * 1000); decodeCell(fr); S.history[S.history.length - 1].t = Date.now() - k * 1000; S.lastHist = 0; }
+  demo.timer = setInterval(() => feed(demoCell()), 1000);
+}
+function stopDemo() { clearInterval(demo.timer); demo.timer = null; S.info = null; S.settings = null; S.setStamp = null; renderDevice(); setMode('off'); log('Demo stopped'); }
+function demoWrite(reg, val) { demo.set[reg] = val; if (reg === 32) demo.cap = val / 1000; setTimeout(() => feed(demoSettings()), 250); }
+
+/* ---------- wiring ---------- */
+$('#btnConnect').onclick = btConnect;
+$('#btnDisconnect').onclick = disconnect;
+$('#btnDemo').onclick = () => S.mode === 'demo' ? stopDemo() : startDemo();
+$('#btnReadSet').onclick = () => { if (S.mode === 'demo') feed(demoSettings()); else send(buildCmd(CMD_CELL_INFO)).catch(e => toast(e.message)); toast('Requesting settings…'); };
+$('#btnCsv').onclick = exportCsv;
+$('#savedList').addEventListener('click', e => {
+  const b = e.target.closest('button'); if (!b) return;
+  if (b.dataset.copy) { navigator.clipboard.writeText(b.dataset.copy).then(() => toast('Copied – paste it in the address bar'), () => toast(b.dataset.copy)); return; }
+  if (b.id === 'quickRe') { // fallback: chooser that only lists the last-used BMS
+    const last = knownList()[0]; if (!last || !navigator.bluetooth) return;
+    navigator.bluetooth.requestDevice({ filters: [{ name: last.name }], optionalServices: [SVC] })
+      .then(connectKnown).catch(err => { if (err.name !== 'NotFoundError') toast('Could not connect: ' + err.message); });
+  }
+  else if (b.id === 'cdNow') { const s = countdown.s; stopCountdown(); connectKnown(s.dev); }
+  else if (b.id === 'cdStop') { stopCountdown(); log('Auto-connect cancelled'); }
+  else if (b.dataset.conn) { const s = saved.find(x => x.id === b.dataset.conn); if (s) connectKnown(s.dev); }
+  else if (b.dataset.forget) forget(b.dataset.forget);
+});
+$('#savedSel').onchange = e => { const s = saved.find(x => x.id === e.target.value); if (s) connectKnown(s.dev); };
+// keep the local launcher server alive while the app window is open (it stops itself when the app is closed)
+if (location.protocol === 'http:') setInterval(() => fetch('ping', { cache: 'no-store' }).catch(() => {}), 30000);
+$('#btnClearLog').onclick = () => { $('#log').innerHTML = ''; logLines.length = 0; S.history = []; renderStatus(); };
+$('#proto').onchange = () => { store.set('proto', $('#proto').value); log('Protocol set to ' + $('#proto').selectedOptions[0].text); };
+$('#btnTheme').onclick = () => {
+  const cur = document.documentElement.dataset.theme || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+  const nx = cur === 'dark' ? 'light' : 'dark'; document.documentElement.dataset.theme = nx; store.set('theme', nx); renderStatus();
+};
+function showTab(t) {
+  $$('#nav button').forEach(b => b.classList.toggle('active', b.dataset.tab === t));
+  $$('section.tab').forEach(s => s.classList.toggle('active', s.id === 'tab-' + t));
+  store.set('tab', t); if (t === 'status') renderStatus();
+}
+$$('#nav button').forEach(b => b.onclick = () => showTab(b.dataset.tab));
+const setHdr = () => document.documentElement.style.setProperty('--hdr', $('header.top').offsetHeight + 'px');
+window.addEventListener('resize', () => { setHdr(); if (S.cell) renderStatus(); }); setHdr();
+
+(function init() {
+  const th = store.get('theme'); if (th) document.documentElement.dataset.theme = th;
+  const p = store.get('proto'); if (p) $('#proto').value = p;
+  const t = store.get('tab'); if (t && $('#tab-' + t)) showTab(t);
+  if (!navigator.bluetooth) $('#btWarn').textContent = 'Bluetooth is not available in this browser. Open this file in Microsoft Edge or Google Chrome (Windows 10/11 with Bluetooth).';
+  setMode('off'); renderDevice(); renderAlarms(); renderControl();
+  log('Ready.');
+  autoStart();
+})();
+</script>
+</body>
+</html>
